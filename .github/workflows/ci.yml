@@ -1,0 +1,31 @@
+name: Code Review Check
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  check-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Check for approved reviews
+        id: review_check
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if PR is not approved
+        run: |
+          APPROVED=$(gh pr view ${{ github.event.pull_request.number }} --json reviews --jq '.reviews | map(select(.state=="APPROVED")) | length')
+          if [ "$APPROVED" -eq 0 ]; then
+            echo "❌ PR ще не має схваленого код-рев’ю!"
+            exit 1
+          else
+            echo "✅ PR схвалено. Продовжуємо..."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
