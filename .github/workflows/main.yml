@@ -1,0 +1,40 @@
+name: CI Analysis
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Cloc
+        run: sudo apt-get install -y cloc
+
+      - name: Count lines of code with Cloc
+        run: |
+          cloc src/ > cloc-report.txt
+          cat cloc-report.txt
+
+      - name: Upload Cloc report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloc-report
+          path: cloc-report.txt
+
+      - name: Run SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+          unzip sonar-scanner-cli-4.8.0.2856-linux.zip
+          export PATH=$PATH:$(pwd)/sonar-scanner-4.8.0.2856-linux/bin
+          sonar-scanner -Dsonar.projectKey=nazar-vi_pythonproject -Dsonar.organization=nazar-vi -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=$SONAR_TOKEN
